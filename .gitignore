@@ -186,3 +186,8 @@ JuceLibraryCode/include_juce_gui_extra.mm
 JuceLibraryCode/JuceHeader.h
 JuceLibraryCode/JucePluginDefines.h
 JuceLibraryCode/ReadMe.txt
+Builds/VisualStudio2017/.vs/Clipper/v15/ipch/AutoPCH/8e6cab522a89802/INCLUDE_JUCE_AUDIO_PROCESSORS.ipch
+Builds/VisualStudio2017/.vs/Clipper/v15/ipch/AutoPCH/c5b09608b21a5119/JUCE_AUDIO_DEVICES.ipch
+Builds/VisualStudio2017/.vs/Clipper/v15/ipch/AutoPCH/ed295bce890dd1a5/PLUGINEDITOR.ipch
+Builds/VisualStudio2017/x64/Debug/VST3/Clipper_VST3.tlog/link.delete.1.tlog
+Builds/VisualStudio2017/x64/Release/VST3/Clipper_VST3.tlog/link.delete.1.tlog

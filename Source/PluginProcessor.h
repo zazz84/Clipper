@@ -105,5 +105,10 @@ private:
 	std::atomic<float>* mixParameter = nullptr;
 	std::atomic<float>* volumeParameter = nullptr;
 
+	juce::AudioParameterBool* buttonAParameter = nullptr;
+	juce::AudioParameterBool* buttonBParameter = nullptr;
+
+	float inputLast[2];
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ClipperAudioProcessor)
 };

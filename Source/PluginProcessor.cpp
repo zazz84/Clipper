@@ -28,6 +28,9 @@ ClipperAudioProcessor::ClipperAudioProcessor()
 	thresholdParameter = apvts.getRawParameterValue(paramsNames[1]);
 	mixParameter       = apvts.getRawParameterValue(paramsNames[2]);
 	volumeParameter    = apvts.getRawParameterValue(paramsNames[3]);
+
+	buttonAParameter   = static_cast<juce::AudioParameterBool*>(apvts.getParameter("ButtonA"));
+	buttonBParameter   = static_cast<juce::AudioParameterBool*>(apvts.getParameter("ButtonB"));
 }
 
 ClipperAudioProcessor::~ClipperAudioProcessor()
@@ -139,6 +142,8 @@ void ClipperAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 	const auto threshold = thresholdParameter->load();
 	const auto mix = mixParameter->load();
 	const auto volume = juce::Decibels::decibelsToGain(volumeParameter->load());
+	const auto buttonA = buttonAParameter->get();
+	const auto buttonB = buttonBParameter->get();
 
 	// Mics constants
 	const float thresholdGain = juce::Decibels::decibelsToGain(threshold);
@@ -147,23 +152,70 @@ void ClipperAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 	const float thresholdGainNegative = -1.0f * thresholdGain + offset;
 	const float mixInverse = 1.0f - mix;
 	const int channels = getTotalNumOutputChannels();
-	const int samples = buffer.getNumSamples();		
+	const int samples = buffer.getNumSamples();
+
+	// Soft clipper parameters
+	const float ratio = 0.1f;
 
 	for (int channel = 0; channel < channels; ++channel)
 	{
 		// Channel pointer
 		auto* channelBuffer = buffer.getWritePointer(channel);
 
-		for (int sample = 0; sample < samples; ++sample)
+		if (buttonA == true)
 		{
-			// Get input
-			const float in = channelBuffer[sample];
+			for (int sample = 0; sample < samples; ++sample)
+			{
+				// Get input
+				const float in = channelBuffer[sample];
 
-			// Apply clipping
-			const float inClipped = (in > 0) ? fminf(in, thresholdGainPositive) : fmaxf(in, thresholdGainNegative);
+				// Apply clipping
+				const float inClipped = (in > 0) ? fminf(in, thresholdGainPositive) : fmaxf(in, thresholdGainNegative);
 
-			// Apply volume, mix and send to output
-			channelBuffer[sample] = volume * (mix * inClipped + mixInverse * in);
+				// Apply volume, mix and send to output
+				channelBuffer[sample] = volume * (mix * inClipped + mixInverse * in);
+			}
+
+			inputLast[channel] = channelBuffer[samples - 1];
+		}
+		else
+		{
+			float last = inputLast[channel];
+
+			for (int sample = 0; sample < samples; ++sample)
+			{
+				// Get input
+				const float in = channelBuffer[sample];
+
+				// Output is delayed by 1 sample
+				// Apply volume, mix and send to output
+				channelBuffer[sample] = volume * (mix * last + mixInverse * in);
+
+				if (in > 0)
+				{
+					if (in > thresholdGainPositive)
+					{
+						last += (thresholdGainPositive - last) * ratio;
+					}
+					else
+					{
+						last = in;
+					}
+				}
+				else
+				{
+					if (in < thresholdGainNegative)
+					{
+						last += (thresholdGainNegative - last) * ratio;
+					}
+					else
+					{
+						last = in;
+					}
+				}
+			}
+
+			inputLast[channel] = last;
 		}
 	}
 }
@@ -206,6 +258,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout ClipperAudioProcessor::creat
 	layout.add(std::make_unique<juce::AudioParameterFloat>(paramsNames[1], paramsNames[1], NormalisableRange<float>(-60.0f,  0.0f,  1.0f, 1.0f), -12.0f));
 	layout.add(std::make_unique<juce::AudioParameterFloat>(paramsNames[2], paramsNames[2], NormalisableRange<float>(  0.0f,  1.0f, 0.05f, 1.0f),   1.0f));
 	layout.add(std::make_unique<juce::AudioParameterFloat>(paramsNames[3], paramsNames[3], NormalisableRange<float>(-24.0f, 24.0f,  0.1f, 1.0f),   0.0f));
+
+	layout.add(std::make_unique<juce::AudioParameterBool>("ButtonA", "ButtonA", true));
+	layout.add(std::make_unique<juce::AudioParameterBool>("ButtonB", "ButtonB", false));
 
 	return layout;
 }
