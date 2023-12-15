@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "DiodeClipper.h"
 
 //==============================================================================
 class LowPassFilter
@@ -98,6 +99,9 @@ public:
 
 	APVTS apvts{ *this, nullptr, "Parameters", createParameterLayout() };
 
+	void setDistortion(double distortion);
+	void setWarmth(double warmth);
+
 private:	
 	//==============================================================================
 	std::atomic<float>* asymetryParameter = nullptr;
@@ -107,8 +111,10 @@ private:
 
 	juce::AudioParameterBool* buttonAParameter = nullptr;
 	juce::AudioParameterBool* buttonBParameter = nullptr;
+	juce::AudioParameterBool* buttonCParameter = nullptr;
 
 	float inputLast[2];
+	DiodeClipper<double> diodeClippers[2] = {};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ClipperAudioProcessor)
 };

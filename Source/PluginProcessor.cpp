@@ -31,6 +31,7 @@ ClipperAudioProcessor::ClipperAudioProcessor()
 
 	buttonAParameter   = static_cast<juce::AudioParameterBool*>(apvts.getParameter("ButtonA"));
 	buttonBParameter   = static_cast<juce::AudioParameterBool*>(apvts.getParameter("ButtonB"));
+	buttonCParameter   = static_cast<juce::AudioParameterBool*>(apvts.getParameter("ButtonC"));
 }
 
 ClipperAudioProcessor::~ClipperAudioProcessor()
@@ -101,7 +102,10 @@ void ClipperAudioProcessor::changeProgramName (int index, const juce::String& ne
 
 //==============================================================================
 void ClipperAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
-{	
+{
+	// Diode Clipper init
+	diodeClippers[0].setSamplerRate(sampleRate);
+	diodeClippers[1].setSamplerRate(sampleRate);
 }
 
 void ClipperAudioProcessor::releaseResources()
@@ -144,6 +148,7 @@ void ClipperAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 	const auto volume = juce::Decibels::decibelsToGain(volumeParameter->load());
 	const auto buttonA = buttonAParameter->get();
 	const auto buttonB = buttonBParameter->get();
+	const auto buttonC = buttonCParameter->get();
 
 	// Mics constants
 	const float thresholdGain = juce::Decibels::decibelsToGain(threshold);
@@ -156,6 +161,10 @@ void ClipperAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
 	// Soft clipper parameters
 	const float ratio = 0.1f;
+
+	// Diode clipper
+	setDistortion(3.0f);
+	setWarmth(1.0f);
 
 	for (int channel = 0; channel < channels; ++channel)
 	{
@@ -178,7 +187,7 @@ void ClipperAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
 			inputLast[channel] = channelBuffer[samples - 1];
 		}
-		else
+		else if (buttonB == true)
 		{
 			float last = inputLast[channel];
 
@@ -216,6 +225,35 @@ void ClipperAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 			}
 
 			inputLast[channel] = last;
+		}
+		else
+		{
+			// Gain diode clipper input to mach threshold behaviour in modes A and B
+			//TO DO: Make sure output is never above threshold
+			double thresholdOffset = -8.0;
+
+			if (threshold > thresholdOffset)
+			{
+				thresholdOffset += 0.65 * (thresholdOffset - threshold);
+			}
+
+			const double thresholdBoost = juce::Decibels::decibelsToGain(thresholdOffset - threshold);
+			const double thresholdAttenuation = juce::Decibels::decibelsToGain(threshold - thresholdOffset);
+
+			auto& diodeClipper = diodeClippers[channel];
+
+			for (int sample = 0; sample < samples; ++sample)
+			{
+				// Get input
+				const float in = channelBuffer[sample];
+
+				// Apply clipping
+				const float inClipped = diodeClipper.run(in * thresholdBoost) * thresholdAttenuation;
+				//const float inClipped = diodeClipper.run(in);
+
+				// Apply volume, mix and send to output
+				channelBuffer[sample] = volume * (mix * inClipped + mixInverse * in);
+			}
 		}
 	}
 }
@@ -261,8 +299,25 @@ juce::AudioProcessorValueTreeState::ParameterLayout ClipperAudioProcessor::creat
 
 	layout.add(std::make_unique<juce::AudioParameterBool>("ButtonA", "ButtonA", true));
 	layout.add(std::make_unique<juce::AudioParameterBool>("ButtonB", "ButtonB", false));
+	layout.add(std::make_unique<juce::AudioParameterBool>("ButtonC", "ButtonC", false));
 
 	return layout;
+}
+
+void ClipperAudioProcessor::setDistortion(double distortion)
+{
+	double idealityFactor = 2 - (-1.2250 * std::pow(0.1837, distortion) + 1.2250);
+
+	diodeClippers[0].setIdeality(idealityFactor);
+	diodeClippers[1].setIdeality(idealityFactor);
+}
+
+void ClipperAudioProcessor::setWarmth(double warmth)
+{
+	double asymmetry = 1 + (2 * (1 - warmth));
+
+	diodeClippers[0].setAsymmetry(asymmetry);
+	diodeClippers[1].setAsymmetry(asymmetry);
 }
 
 //==============================================================================

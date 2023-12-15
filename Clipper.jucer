@@ -5,6 +5,7 @@
               companyName="zazz" pluginFormats="buildVST3" pluginVST3Category="Distortion">
   <MAINGROUP id="DUp9tF" name="Clipper">
     <GROUP id="{3AB066F6-7A85-5CD5-6AA9-4EAFD80F546A}" name="Source">
+      <FILE id="ENp1AD" name="DiodeClipper.h" compile="0" resource="0" file="Source/DiodeClipper.h"/>
       <FILE id="jovEjC" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="fekmEH" name="PluginProcessor.h" compile="0" resource="0"

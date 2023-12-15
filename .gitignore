@@ -191,3 +191,8 @@ Builds/VisualStudio2017/.vs/Clipper/v15/ipch/AutoPCH/c5b09608b21a5119/JUCE_AUDIO
 Builds/VisualStudio2017/.vs/Clipper/v15/ipch/AutoPCH/ed295bce890dd1a5/PLUGINEDITOR.ipch
 Builds/VisualStudio2017/x64/Debug/VST3/Clipper_VST3.tlog/link.delete.1.tlog
 Builds/VisualStudio2017/x64/Release/VST3/Clipper_VST3.tlog/link.delete.1.tlog
+Clipper.jucer
+Builds/VisualStudio2017/x64/Release/Shared Code/Clipper_.8C67775C.tlog/CL.11272.write.1.tlog
+Builds/VisualStudio2017/Clipper_SharedCode.vcxproj.user
+Builds/VisualStudio2017/.vs/config/applicationhost.config
+Builds/VisualStudio2017/.vs/Clipper/v15/ipch/AutoPCH/e3dc7483d4857403/INCLUDE_JUCE_GUI_BASICS.ipch

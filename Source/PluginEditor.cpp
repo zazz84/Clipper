@@ -13,11 +13,12 @@
 ClipperAudioProcessorEditor::ClipperAudioProcessorEditor (ClipperAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
     : AudioProcessorEditor (&p), audioProcessor (p), valueTreeState(vts)
 {
-	juce::Colour dark = juce::Colour::fromHSV(0.0f, 0.5f, 0.4f, 1.0f);
-	juce::Colour light = juce::Colour::fromHSV(0.0f, 0.5f, 0.6f, 1.0f);
+	juce::Colour light = juce::Colour::fromHSV(HUE * 0.01f, 0.5f, 0.6f, 1.0f);
+	juce::Colour medium = juce::Colour::fromHSV(HUE * 0.01f, 0.5f, 0.5f, 1.0f);
+	juce::Colour dark = juce::Colour::fromHSV(HUE * 0.01f, 0.5f, 0.4f, 1.0f);
 
 	getLookAndFeel().setColour(juce::Slider::thumbColourId, dark);
-	getLookAndFeel().setColour(juce::Slider::rotarySliderFillColourId, juce::Colour::fromHSV(0.0f, 0.5f, 0.5f, 1.0f));
+	getLookAndFeel().setColour(juce::Slider::rotarySliderFillColourId, medium);
 	getLookAndFeel().setColour(juce::Slider::rotarySliderOutlineColourId, light);
 
 	for (int i = 0; i < N_SLIDERS_COUNT; i++)
@@ -39,26 +40,33 @@ ClipperAudioProcessorEditor::ClipperAudioProcessorEditor (ClipperAudioProcessor&
 	}
 
 	// Buttons
-	addAndMakeVisible(typaAButton);
-	addAndMakeVisible(typaBButton);
+	addAndMakeVisible(typeAButton);
+	addAndMakeVisible(typeBButton);
+	addAndMakeVisible(typeCButton);
+		
+	typeAButton.setRadioGroupId(TYPE_BUTTON_GROUP);
+	typeBButton.setRadioGroupId(TYPE_BUTTON_GROUP);
+	typeCButton.setRadioGroupId(TYPE_BUTTON_GROUP);
 	
-	typaAButton.onClick = [this] { m_type = 0; };
-	typaAButton.onClick = [this] { m_type = 1; };
-	
-	typaAButton.setRadioGroupId(TYPE_BUTTON_GROUP);
-	typaBButton.setRadioGroupId(TYPE_BUTTON_GROUP);
-	
-	typaAButton.setClickingTogglesState(true);
-	typaBButton.setClickingTogglesState(true);
+	typeAButton.setClickingTogglesState(true);
+	typeBButton.setClickingTogglesState(true);
+	typeCButton.setClickingTogglesState(true);
 
-	buttonAAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(valueTreeState, "ButtonA", typaAButton));
-	buttonBAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(valueTreeState, "ButtonB", typaBButton));
+	buttonAAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(valueTreeState, "ButtonA", typeAButton));
+	buttonBAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(valueTreeState, "ButtonB", typeBButton));
+	buttonCAttachment.reset(new juce::AudioProcessorValueTreeState::ButtonAttachment(valueTreeState, "ButtonC", typeCButton));
 
-	typaAButton.setColour(juce::TextButton::buttonColourId, light);
-	typaBButton.setColour(juce::TextButton::buttonColourId, light);
+	typeAButton.setColour(juce::TextButton::buttonColourId, light);
+	typeBButton.setColour(juce::TextButton::buttonColourId, light);
+	typeCButton.setColour(juce::TextButton::buttonColourId, light);
 
-	typaAButton.setColour(juce::TextButton::buttonOnColourId, dark);
-	typaBButton.setColour(juce::TextButton::buttonOnColourId, dark);
+	typeAButton.setColour(juce::TextButton::buttonOnColourId, dark);
+	typeBButton.setColour(juce::TextButton::buttonOnColourId, dark);
+	typeCButton.setColour(juce::TextButton::buttonOnColourId, dark);
+
+	typeAButton.onClick = [this] { redrawGUI(0); };
+	typeBButton.onClick = [this] { redrawGUI(1); };
+	typeCButton.onClick = [this] { redrawGUI(2); };
 
 	setSize((int)(SLIDER_WIDTH * 0.01f * SCALE * N_SLIDERS_COUNT), (int)((SLIDER_WIDTH + BOTTOM_MENU_HEIGHT) * 0.01f * SCALE));
 }
@@ -69,7 +77,7 @@ ClipperAudioProcessorEditor::~ClipperAudioProcessorEditor()
 
 void ClipperAudioProcessorEditor::paint (juce::Graphics& g)
 {
-	g.fillAll(juce::Colour::fromHSV(0.0f, 0.5f, 0.7f, 1.0f));
+	g.fillAll(juce::Colour::fromHSV(HUE * 0.01f, 0.5f, 0.7f, 1.0f));
 }
 
 void ClipperAudioProcessorEditor::resized()
@@ -92,7 +100,29 @@ void ClipperAudioProcessorEditor::resized()
 	// Buttons
 	const int posY = height + (int)(BOTTOM_MENU_HEIGHT * 0.01f * SCALE * 0.25f);
 	const int buttonHeight = (int)(BOTTOM_MENU_HEIGHT * 0.01f * SCALE * 0.5f);
+	const int center = (int)(getWidth() * 0.5f);
 
-	typaAButton.setBounds((int)(getWidth() * 0.5f - buttonHeight * 0.6f), posY, buttonHeight, buttonHeight);
-	typaBButton.setBounds((int)(getWidth() * 0.5f + buttonHeight * 0.6f), posY, buttonHeight, buttonHeight);
+	typeAButton.setBounds((int)(center - buttonHeight * 1.8f), posY, buttonHeight, buttonHeight);
+	typeBButton.setBounds((int)(center - buttonHeight * 0.5f), posY, buttonHeight, buttonHeight);
+	typeCButton.setBounds((int)(center + buttonHeight * 0.8f), posY, buttonHeight, buttonHeight);
+
+	// Hide unused params
+	if (bool buttonC = static_cast<juce::AudioParameterBool*>(valueTreeState.getParameter("ButtonC"))->get())
+	{
+		redrawGUI(2);
+	}
+}
+
+void ClipperAudioProcessorEditor::redrawGUI(int type)
+{
+	if (type == 2)
+	{
+		m_sliders[0].setVisible(false);
+		m_labels[0].setVisible(false);
+	}
+	else
+	{
+		m_sliders[0].setVisible(true);
+		m_labels[0].setVisible(true);
+	}
 }
